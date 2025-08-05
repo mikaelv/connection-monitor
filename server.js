@@ -90,13 +90,13 @@ setInterval(() => {
     const now = new Date();
     connectedStudents.forEach((student, studentId) => {
         const timeSinceLastPing = now - student.lastPing;
-        if (timeSinceLastPing > 30000) {
+        if (timeSinceLastPing > 3000) {
             student.ws.terminate();
             connectedStudents.delete(studentId);
-            logConnection(studentId, 'timeout', 'no ping for 30 seconds', student.name);
+            logConnection(studentId, 'timeout', 'no ping for 3 seconds', student.name);
         }
     });
-}, 15000);
+}, 1500);
 
 // LTI 1.0/1.1 Launch endpoint
 app.post('/lti/launch', async (req, res) => {

@@ -95,9 +95,9 @@
         </div>
     </div>
 
+    <script src="ws-client.js"></script>
     <script>
-        let ws = null;
-        let pingInterval = null;
+        let client = null;
 
         function addMessage(message) {
             const messages = document.getElementById('messages');
@@ -127,61 +127,20 @@
 
         function connect() {
             const studentId = document.getElementById('studentId').value || 'anonymous';
-            const wsUrl = `ws://${window.location.host}?student=${studentId}`;
             
-            addMessage(`Connecting to ${wsUrl}...`);
+            client = new ConnectionMonitorClient({
+                studentId: studentId,
+                onMessage: addMessage,
+                onStatusChange: updateStatus
+            });
             
-            ws = new WebSocket(wsUrl);
-            
-            ws.onopen = function() {
-                addMessage('Connected to server!');
-                updateStatus(true);
-                
-                pingInterval = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping' }));
-                    }
-                }, 10000);
-            };
-            
-            ws.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'welcome') {
-                        addMessage(`Welcome! Your student ID is: ${data.studentId}`);
-                    } else if (data.type === 'pong') {
-                        addMessage('Received pong from server');
-                    } else {
-                        addMessage(`Server: ${event.data}`);
-                    }
-                } catch (error) {
-                    addMessage(`Server: ${event.data}`);
-                }
-            };
-            
-            ws.onclose = function(event) {
-                addMessage(`Connection closed. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`);
-                updateStatus(false);
-                if (pingInterval) {
-                    clearInterval(pingInterval);
-                    pingInterval = null;
-                }
-            };
-            
-            ws.onerror = function(error) {
-                addMessage(`WebSocket error: ${error}`);
-                updateStatus(false);
-            };
+            client.connect();
         }
 
         function disconnect() {
-            if (ws) {
-                ws.close();
-                ws = null;
-            }
-            if (pingInterval) {
-                clearInterval(pingInterval);
-                pingInterval = null;
+            if (client) {
+                client.disconnect();
+                client = null;
             }
         }
 
@@ -189,8 +148,8 @@
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             
-            if (message && ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(message);
+            if (message && client && client.isConnected()) {
+                client.sendMessage(message);
                 addMessage(`You: ${message}`);
                 input.value = '';
             }

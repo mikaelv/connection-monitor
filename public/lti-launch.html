@@ -41,9 +41,9 @@
         </div>
     </div>
 
+    <script src="ws-client.js"></script>
     <script>
-        let ws = null;
-        let pingInterval = null;
+        let client = null;
         let studentData = null;
 
         function addMessage(message) {
@@ -112,59 +112,21 @@
                 return;
             }
 
-            const wsUrl = 'ws://' + window.location.host + '?student=' + encodeURIComponent(studentData.id) + '&name=' + encodeURIComponent(studentData.name) + '&session=' + studentData.sessionId;
+            client = new ConnectionMonitorClient({
+                studentId: studentData.id,
+                studentName: studentData.name,
+                sessionId: studentData.sessionId,
+                onMessage: addMessage,
+                onStatusChange: updateStatus
+            });
             
-            addMessage('Connecting to monitor...');
-            
-            ws = new WebSocket(wsUrl);
-            
-            ws.onopen = function() {
-                addMessage('Connected to monitor successfully!');
-                updateStatus(true);
-                
-                pingInterval = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping', session: studentData.sessionId }));
-                    }
-                }, 10000);
-            };
-            
-            ws.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'welcome') {
-                        addMessage('Welcome! You are now being monitored.');
-                    } else if (data.type === 'pong') {
-                        addMessage('Monitor confirmed - still connected');
-                    }
-                } catch (error) {
-                    addMessage('Server: ' + event.data);
-                }
-            };
-            
-            ws.onclose = function(event) {
-                addMessage('Disconnected from monitor. Code: ' + event.code);
-                updateStatus(false);
-                if (pingInterval) {
-                    clearInterval(pingInterval);
-                    pingInterval = null;
-                }
-            };
-            
-            ws.onerror = function(error) {
-                addMessage('Connection error occurred');
-                updateStatus(false);
-            };
+            client.connect();
         }
 
         function disconnect() {
-            if (ws) {
-                ws.close();
-                ws = null;
-            }
-            if (pingInterval) {
-                clearInterval(pingInterval);
-                pingInterval = null;
+            if (client) {
+                client.disconnect();
+                client = null;
             }
         }
 
