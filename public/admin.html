@@ -127,6 +127,7 @@
                     <thead>
                         <tr>
                             <th>Student ID</th>
+                            <th>Name</th>
                             <th>IP Address</th>
                             <th>Connected At</th>
                             <th>Last Ping</th>
@@ -175,6 +176,7 @@
                         const row = tbody.insertRow();
                         row.innerHTML = `
                             <td>${student.id}</td>
+                            <td>${student.name}</td>
                             <td>${student.ip}</td>
                             <td>${formatTime(student.connectedAt)}</td>
                             <td>${getTimeSince(student.lastPing)}</td>
@@ -188,9 +190,11 @@
                     data.recentLogs.reverse().forEach(log => {
                         const logDiv = document.createElement('div');
                         logDiv.className = `log-entry log-${log.event}`;
+                        const displayName = log.studentName && log.studentName !== log.studentId ? 
+                            `${log.studentName} (${log.studentId})` : log.studentId;
                         logDiv.innerHTML = `
                             <strong>${formatTime(log.timestamp)}</strong> - 
-                            Student ${log.studentId} ${log.event} ${log.reason ? `(${log.reason})` : ''} - 
+                            Student ${displayName} ${log.event} ${log.reason ? `(${log.reason})` : ''} - 
                             Total: ${log.totalConnected}
                         `;
                         logsContent.appendChild(logDiv);
